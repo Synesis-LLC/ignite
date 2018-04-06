@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -62,6 +63,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return "bltTest";
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -75,6 +81,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
         dsCfg.setWalMode(WALMode.LOG_ONLY);
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -203,6 +211,24 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline", "add", consistentIds(other)));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test baseline add items works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineAddOnNotActiveCluster() throws Exception {
+        Ignite ignite = startGrid(1);
+
+        assertFalse(ignite.cluster().active());
+
+        String consistentIDs =
+            getTestIgniteInstanceName(1) + ", " +
+            getTestIgniteInstanceName(2) + "," +
+            getTestIgniteInstanceName(3);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
     }
 
     /**
